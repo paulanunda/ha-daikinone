@@ -1,0 +1,238 @@
+{
+  "_about": "Hand-transcribed, machine-readable snapshot of the Daikin One Open API contract. Source of truth for tests. Everything here comes from the two published pages; anything the pages do not state is listed under 'undocumented' rather than guessed.",
+  "source": {
+    "documentation_url": "https://www.daikinone.com/openapi/documentation/index.html",
+    "overview_url": "https://www.daikinone.com/openapi/overview/index.html",
+    "pages_last_updated": "2026-01-14",
+    "retrieved": "2026-10-11",
+    "documentation_html_sha256": "a8071ef408e2f6e2bdb4b53ceb77a9e06437a88991a2e2b2f8dc3bd157ceddcc",
+    "overview_html_sha256": "f0f9c85d982db4abaf56ab2748345f976a402c103651c561dbccf3129368937c",
+    "text_copies": ["documentation.txt", "overview.txt"]
+  },
+  "transport": {
+    "base_url": "https://integrator-api.daikinskyport.com",
+    "host": "integrator-api.daikinskyport.com",
+    "min_tls_version": "1.3",
+    "body_format": "json",
+    "methods": ["GET", "PUT", "POST"],
+    "required_headers": {
+      "Content-Type": "application/json",
+      "x-api-key": "<integrator API key>"
+    },
+    "authorization_header": {
+      "format": "Authorization: Bearer <accessToken>",
+      "required_on": "every endpoint except POST /v1/token"
+    }
+  },
+  "usage_limits": {
+    "min_seconds_before_change_is_reflected": 15,
+    "min_poll_interval_seconds": 180,
+    "max_open_requests": 3
+  },
+  "endpoints": {
+    "token": {
+      "method": "POST",
+      "path": "/v1/token",
+      "request_body": {
+        "email": "string",
+        "integratorToken": "string"
+      },
+      "response_body": {
+        "accessToken": "string",
+        "accessTokenExpiresIn": "number",
+        "tokenType": "Bearer"
+      },
+      "notes": ["email is case sensitive"]
+    },
+    "list_devices": {
+      "method": "GET",
+      "path": "/v1/devices",
+      "request_body": null,
+      "response_shape": "array of locations",
+      "response_body": [
+        {
+          "locationName": "string",
+          "devices": [
+            {
+              "id": "string",
+              "name": "string",
+              "model": "string",
+              "firmwareVersion": "string"
+            }
+          ]
+        }
+      ]
+    },
+    "get_device": {
+      "method": "GET",
+      "path": "/v1/devices/<id>",
+      "request_body": null,
+      "response_example": {
+        "equipmentStatus": 0,
+        "mode": 0,
+        "modeLimit": 1,
+        "modeEmHeatAvailable": 0,
+        "fan": 0,
+        "fanCirculate": 1,
+        "fanCirculateSpeed": 1,
+        "heatSetpoint": 20.5,
+        "coolSetpoint": 23.5,
+        "setpointDelta": 2,
+        "setpointMinimum": 10.0,
+        "setpointMaximum": 32.3,
+        "tempIndoor": 21.5,
+        "humIndoor": 50,
+        "tempOutdoor": 20.5,
+        "humOutdoor": 50,
+        "scheduleEnabled": false,
+        "geofencingEnabled": false
+      }
+    },
+    "set_mode_setpoints": {
+      "method": "PUT",
+      "path": "/v1/devices/<id>/msp",
+      "request_body": {
+        "mode": "integer",
+        "heatSetpoint": "float",
+        "coolSetpoint": "float"
+      },
+      "all_fields_required": true,
+      "response_body": {
+        "message": "string"
+      },
+      "rules": [
+        "heatSetpoint must be lower than coolSetpoint by at least setpointDelta",
+        "both setpoints must be between setpointMinimum and setpointMaximum",
+        "a successful request turns off schedule and away state"
+      ]
+    },
+    "set_schedule": {
+      "method": "PUT",
+      "path": "/v1/devices/<id>/schedule",
+      "request_body": {
+        "scheduleEnabled": "boolean"
+      },
+      "response_body": {
+        "message": "string"
+      },
+      "rules": ["away state takes priority over schedule"]
+    },
+    "set_fan": {
+      "method": "PUT",
+      "path": "/v1/devices/<id>/fan",
+      "request_body": {
+        "fanCirculate": "integer",
+        "fanCirculateSpeed": "integer"
+      },
+      "response_body": {
+        "message": "string"
+      },
+      "rules": ["unitary systems only; VRV (P1P2) and single/multi-split (S21) run the fan at maximum speed"]
+    }
+  },
+  "http_status": {
+    "200": "OK - request succeeded",
+    "400": "Bad request - problem with the request parameters, see response body",
+    "401": "Unauthorized - the accessToken is not valid",
+    "403": "Forbidden - the integratorApiKey is not valid",
+    "415": "Unsupported Media Type - Content-Type is not application/json",
+    "429": "Too Many Requests - rate of API calls is too high",
+    "500": "Internal error"
+  },
+  "error_body": {
+    "applies_to": "any response other than HTTP 200",
+    "shape": {
+      "messages": "string"
+    },
+    "note": "The error body key is documented as 'messages' (plural); the success body key on writes is 'message' (singular)."
+  },
+  "messages": {
+    "Success": "Request is sent to the thermostat",
+    "NotAuthorizedException": "Authentication error",
+    "Invalid request body": "Request body has malformed data",
+    "DeviceOfflineException": "Device is currently offline"
+  },
+  "fields": {
+    "locationName": {"type": "string", "read_only": true},
+    "id": {"type": "string", "read_only": true},
+    "name": {"type": "string", "read_only": true},
+    "model": {"type": "string", "read_only": true},
+    "firmwareVersion": {"type": "string", "read_only": true},
+    "equipmentStatus": {
+      "type": "integer",
+      "read_only": true,
+      "enum": {"1": "cool", "2": "overcool for dehum", "3": "heat", "4": "fan", "5": "idle"}
+    },
+    "modeEmHeatAvailable": {
+      "type": "integer",
+      "read_only": true,
+      "enum": {"0": "not available", "1": "available"},
+      "note": "if available, mode may equal 4 (emergency heat)"
+    },
+    "mode": {
+      "type": "integer",
+      "read_only": false,
+      "enum": {"0": "off", "1": "heat", "2": "cool", "3": "auto", "4": "emergency heat"}
+    },
+    "modeLimit": {
+      "type": "integer",
+      "read_only": true,
+      "enum": {"0": "none", "1": "all", "2": "heat only", "3": "cool only"}
+    },
+    "fan": {
+      "type": "integer",
+      "read_only": true,
+      "enum": {"0": "auto", "1": "on"},
+      "note": "described as 'System fan'; 'refer to fanCirculate for fan settings'"
+    },
+    "fanCirculate": {
+      "type": "integer",
+      "read_only": false,
+      "enum": {"0": "off", "1": "always on", "2": "on a schedule"},
+      "note": "unitary only"
+    },
+    "fanCirculateSpeed": {
+      "type": "integer",
+      "read_only": false,
+      "enum": {"0": "low", "1": "medium", "2": "high"},
+      "note": "unitary only"
+    },
+    "heatSetpoint": {"type": "float", "read_only": false, "unit": "celsius", "increment": 0.1, "note": "thermostat UI rounds to nearest 0.5"},
+    "coolSetpoint": {"type": "float", "read_only": false, "unit": "celsius", "increment": 0.1, "note": "thermostat UI rounds to nearest 0.5"},
+    "setpointDelta": {"type": "float", "read_only": true, "unit": "celsius", "increment": 0.5},
+    "setpointMinimum": {"type": "float", "read_only": true, "unit": "celsius", "increment": 0.1},
+    "setpointMaximum": {"type": "float", "read_only": true, "unit": "celsius", "increment": 0.1},
+    "tempIndoor": {"type": "float", "read_only": true, "unit": "celsius", "increment": 0.1},
+    "humIndoor": {"type": "float", "read_only": true, "unit": "percent"},
+    "tempOutdoor": {"type": "float", "read_only": true, "unit": "celsius", "increment": 0.1},
+    "humOutdoor": {"type": "float", "read_only": true, "unit": "percent"},
+    "scheduleEnabled": {"type": "boolean", "read_only": false},
+    "geofencingEnabled": {
+      "type": "boolean",
+      "read_only": null,
+      "note": "appears in the GET /v1/devices/<id> example only; has no row in the data definitions table"
+    }
+  },
+  "undocumented": [
+    "Unit of accessTokenExpiresIn, and any refresh mechanism other than calling POST /v1/token again.",
+    "Whether a 429 response carries a Retry-After header.",
+    "Which HTTP status accompanies DeviceOfflineException, and whether GET /v1/devices/<id> returns it for an offline thermostat or only writes do.",
+    "Any online/offline indicator in GET /v1/devices.",
+    "The 'Status field in the response body' mentioned in the HTTP Responses prose; no such field appears in any documented body.",
+    "equipmentStatus 0, which the example response uses but the enum does not define.",
+    "The meaning of modeLimit 0 ('none') as distinct from 1 ('all').",
+    "Whether the 3-minute polling limit is per thermostat or per account.",
+    "Whether 'fan' reports the fan setting or whether the fan is running.",
+    "Whether /msp enforces setpointDelta in heat-only or cool-only mode, where one setpoint is inactive.",
+    "Away state and geofencing are mentioned but have no read field (away) or write endpoint (either)."
+  ],
+  "page_source_hints_not_part_of_contract": {
+    "equipmentStatus_commented_out_values": {
+      "6": "waiting to cool",
+      "7": "waiting to heat",
+      "8": "aux humidifier",
+      "9": "aux dehumidifier"
+    },
+    "note": "These sit inside an HTML comment in the documentation page source. They are not published contract and the integration must not depend on them, but they show that values outside 1-5 can plausibly be returned."
+  }
+}
