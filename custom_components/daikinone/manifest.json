@@ -1,11 +1,13 @@
 {
   "domain": "daikinone",
   "name": "Daikin One (Open API)",
-  "codeowners": [],
+  "codeowners": ["@paulanunda"],
   "config_flow": true,
   "dependencies": [],
+  "documentation": "https://github.com/paulanunda/ha-daikinone",
   "integration_type": "hub",
   "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/paulanunda/ha-daikinone/issues",
   "requirements": [],
   "version": "0.1.0"
 }

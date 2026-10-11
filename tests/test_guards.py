@@ -33,6 +33,10 @@ BARE_HOST = re.compile(
 )
 IPV4 = re.compile(r"(?<![\d.])(?:\d{1,3}\.){3}\d{1,3}(?![\d.])")
 
+# Manifest keys that hold links Home Assistant shows to the user. The
+# integration never contacts them.
+MANIFEST_LINK_KEYS = ("documentation", "issue_tracker")
+
 
 def _literal_text(source: str) -> str:
     """Return the string literals and comments of Python source.
@@ -53,6 +57,17 @@ def hosts_in(text: str, *, python: bool = False) -> set[str]:
     found |= {match.group(1).lower() for match in BARE_HOST.finditer(literal)}
     found |= set(IPV4.findall(literal))
     return found
+
+
+def _scanned_text(path: Path) -> str:
+    """Return the text of ``path`` that the host check applies to."""
+    text = path.read_text(encoding="utf-8")
+    if path == INTEGRATION / "manifest.json":
+        manifest = json.loads(text)
+        for key in MANIFEST_LINK_KEYS:
+            manifest.pop(key, None)
+        return json.dumps(manifest)
+    return text
 
 
 def test_host_scanner_catches_what_it_should() -> None:
@@ -85,7 +100,7 @@ def test_source_files_were_found() -> None:
 
 @pytest.mark.parametrize("path", SOURCE_FILES, ids=lambda p: str(p.relative_to(ROOT)))
 def test_only_the_official_api_host_appears_in_source(path: Path) -> None:
-    hosts = hosts_in(path.read_text(encoding="utf-8"), python=path.suffix == ".py")
+    hosts = hosts_in(_scanned_text(path), python=path.suffix == ".py")
     assert hosts <= {ALLOWED_HOST}, f"unexpected host(s) in {path.name}: {hosts - {ALLOWED_HOST}}"
 
 
