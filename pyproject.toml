@@ -28,6 +28,7 @@ target-version = "py314"
 select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "ASYNC", "S", "PL", "C4", "PT", "RET", "TID", "G", "LOG"]
 ignore = [
     "PLR0913", # explicit keyword arguments are clearer than bundling
+    "PLR0917", # pytest fixtures are positional
     "PLR2004", # magic values are fine in tests and enum tables
 ]
 
@@ -41,3 +42,7 @@ strict = true
 files = ["custom_components", "tests"]
 explicit_package_bases = true
 namespace_packages = true
+
+[[tool.mypy.overrides]]
+module = "pytest_homeassistant_custom_component.*"
+ignore_missing_imports = true

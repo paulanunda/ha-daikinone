@@ -1,0 +1,168 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to Daikin One",
+        "description": "Enter the credentials for Daikin's official Open API. Your Daikin account password is not needed and is never requested.",
+        "data": {
+          "email": "Account email",
+          "api_key": "API key",
+          "integrator_token": "Integrator token"
+        },
+        "data_description": {
+          "email": "Exactly as registered with Daikin. It is case sensitive.",
+          "api_key": "From the developer menu under home integration in the Daikin app.",
+          "integrator_token": "From home integration, get integration token, in the Daikin app."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Re-authenticate Daikin One",
+        "description": "Daikin rejected the saved credentials for {account}. Enter a current API key and integrator token.",
+        "data": {
+          "api_key": "API key",
+          "integrator_token": "Integrator token"
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigure Daikin One",
+        "description": "Update the credentials for {account}. The email must stay on the same Daikin account.",
+        "data": {
+          "email": "Account email",
+          "api_key": "API key",
+          "integrator_token": "Integrator token"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Daikin rejected these credentials. Check the email (case sensitive), API key, and integrator token.",
+      "cannot_connect": "Could not reach Daikin. Try again in a moment.",
+      "rate_limited": "Daikin is rate limiting requests. Wait a few minutes and try again.",
+      "unknown": "Daikin returned an unexpected response."
+    },
+    "abort": {
+      "already_configured": "This Daikin account is already configured.",
+      "reauth_successful": "Re-authentication succeeded.",
+      "reconfigure_successful": "The credentials were updated.",
+      "account_mismatch": "That email belongs to a different Daikin account than this entry. Add it as a new entry instead."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Daikin One options",
+        "data": {
+          "scan_interval_minutes": "Polling interval (minutes)"
+        },
+        "data_description": {
+          "scan_interval_minutes": "Daikin does not allow polling more often than once every 3 minutes."
+        }
+      }
+    }
+  },
+  "entity": {
+    "climate": {
+      "thermostat": {
+        "state_attributes": {
+          "preset_mode": {
+            "state": {
+              "none": "None",
+              "emergency_heat": "Emergency heat"
+            }
+          }
+        }
+      }
+    },
+    "sensor": {
+      "indoor_temperature": {
+        "name": "Indoor temperature"
+      },
+      "indoor_humidity": {
+        "name": "Indoor humidity"
+      },
+      "outdoor_temperature": {
+        "name": "Outdoor temperature"
+      },
+      "outdoor_humidity": {
+        "name": "Outdoor humidity"
+      }
+    },
+    "binary_sensor": {
+      "online": {
+        "name": "Online"
+      },
+      "heating": {
+        "name": "Heating"
+      },
+      "cooling": {
+        "name": "Cooling"
+      },
+      "fan": {
+        "name": "Fan"
+      },
+      "geofencing": {
+        "name": "Geofencing"
+      }
+    },
+    "select": {
+      "fan_circulation_mode": {
+        "name": "Fan circulation mode",
+        "state": {
+          "off": "Off",
+          "always_on": "Always on",
+          "schedule": "On a schedule"
+        }
+      },
+      "fan_circulation_speed": {
+        "name": "Fan circulation speed",
+        "state": {
+          "low": "Low",
+          "medium": "Medium",
+          "high": "High"
+        }
+      }
+    },
+    "switch": {
+      "schedule": {
+        "name": "Schedule"
+      }
+    }
+  },
+  "exceptions": {
+    "auth_failed": {
+      "message": "Daikin rejected the saved credentials. Re-authenticate the Daikin One integration."
+    },
+    "rate_limited": {
+      "message": "Daikin is rate limiting requests. Try again in {seconds} seconds."
+    },
+    "cannot_connect": {
+      "message": "Could not get a usable answer from Daikin ({reason})."
+    },
+    "thermostat_unavailable": {
+      "message": "{name} is unavailable, so its current settings are unknown and the change was not sent."
+    },
+    "thermostat_offline": {
+      "message": "Daikin reports that {name} is offline. The change was not applied."
+    },
+    "state_unknown": {
+      "message": "Daikin needs the mode and both setpoints on every change, and {name} has not reported all of them. The change was not sent."
+    },
+    "limits_unknown": {
+      "message": "{name} has not reported its setpoint limits, so the change could not be checked and was not sent."
+    },
+    "write_rejected": {
+      "message": "Daikin rejected the change for {name}."
+    },
+    "setpoint_out_of_range": {
+      "message": "{name} accepts setpoints from {minimum} to {maximum} {unit}."
+    },
+    "setpoints_too_close": {
+      "message": "On {name} the cooling setpoint must be at least {delta} {unit} above the heating setpoint."
+    },
+    "setpoint_no_room": {
+      "message": "{name} keeps its heating and cooling setpoints at least {delta} {unit} apart, and its limits ({minimum} to {maximum} {unit}) leave no room for that with the requested setpoint."
+    },
+    "mode_not_supported": {
+      "message": "{name} does not allow the mode {mode}."
+    }
+  }
+}

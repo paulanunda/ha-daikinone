@@ -90,7 +90,11 @@ class _RequestContext:
         server.in_flight += 1
         server.max_in_flight = max(server.max_in_flight, server.in_flight)
         try:
-            if server.hold is not None:
+            held = server.hold_only is None or server.hold_only == (
+                self._call.method,
+                self._call.path,
+            )
+            if server.hold is not None and held:
                 await server.hold.wait()
             return _Response(server.handle(self._call))
         except BaseException:
@@ -161,7 +165,10 @@ class FakeDaikin:
         self.tokens_issued = 0
         self.in_flight = 0
         self.max_in_flight = 0
+        # While set and not yet triggered, requests wait inside the fake. With
+        # hold_only, only requests to that (method, path) wait.
         self.hold: asyncio.Event | None = None
+        self.hold_only: tuple[str, str] | None = None
         self._queued: dict[tuple[str, str], deque[Outcome]] = defaultdict(deque)
         self._always: dict[tuple[str, str], Outcome] = {}
 
