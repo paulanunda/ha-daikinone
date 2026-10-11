@@ -363,7 +363,9 @@
     "not_observed": [
       "An offline thermostat, so the status code and endpoint behavior for DeviceOfflineException remain unknown.",
       "HTTP 429, so whether Retry-After is sent remains unknown.",
-      "Any write (PUT) response."
-    ]
+      "PUT /schedule and PUT /fan.",
+      "A /msp write that changes the mode, one sent while the schedule is on, and one that violates the limits or delta."
+    ],
+    "set_mode_setpoints": "Two rounds of PUT /v1/devices/<id>/msp on both thermostats in heat mode (heat setpoint 23.3 -> 21.1 -> 23.3, mode and cool setpoint resent unchanged) returned HTTP 200. A read 15 seconds later returned exactly the values sent."
   }
 }
