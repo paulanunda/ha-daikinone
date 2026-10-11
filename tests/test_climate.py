@@ -377,6 +377,20 @@ async def test_manual_device_removal_is_allowed_only_for_unlisted_thermostats(
     assert await async_remove_config_entry_device(hass, entry, gone) is True
 
 
+async def test_manual_device_removal_is_allowed_when_the_entry_never_loaded(
+    hass: HomeAssistant,
+    daikin: FakeDaikin,
+    entry: MockConfigEntry,
+    device_registry: dr.DeviceRegistry,
+) -> None:
+    device = device_registry.async_get_or_create(
+        config_entry_id=entry.entry_id, identifiers={(DOMAIN, MAIN_ID)}
+    )
+    daikin.always("POST", "/v1/token", aiohttp.ClientConnectionError())
+    await setup_entry(hass, entry)
+    assert await async_remove_config_entry_device(hass, entry, device) is True
+
+
 # ----------------------------------------------------------------- commands
 
 

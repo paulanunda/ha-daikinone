@@ -63,7 +63,10 @@ async def async_remove_config_entry_device(
     The integration never removes devices itself. This hook is what enables the
     "Delete" button on the device page.
     """
-    coordinator = entry.runtime_data
+    coordinator: DaikinOneCoordinator | None = getattr(entry, "runtime_data", None)
+    if coordinator is None:
+        # The entry is not set up, so nothing here can recreate the device.
+        return True
     return not any(
         domain == DOMAIN and coordinator.is_listed(device_id)
         for domain, device_id in device.identifiers
