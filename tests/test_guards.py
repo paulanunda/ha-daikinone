@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import ast
+import io
 import re
+import tokenize
 from pathlib import Path
 
 import pytest
@@ -24,35 +26,54 @@ SOURCE_FILES = sorted(
 # Anything that looks like a URL authority or a bare DNS name.
 URL_HOST = re.compile(r"[a-z][a-z0-9+.-]*://([^/\s\"'<>{}]+)", re.IGNORECASE)
 BARE_HOST = re.compile(
-    r"(?<![\w.@-])((?:[a-z0-9-]+\.)+(?:com|net|org|io|dev|app|cloud|co|us|jp|info|biz|ai|me))(?![\w-])",
+    r"(?<![\w.@-])\.?((?:[a-z0-9-]+\.)+(?:com|net|org|io|dev|app|cloud|co|us|jp|info|biz|ai|me))(?![\w-])",
     re.IGNORECASE,
 )
 IPV4 = re.compile(r"(?<![\d.])(?:\d{1,3}\.){3}\d{1,3}(?![\d.])")
 
 
-def hosts_in(text: str) -> set[str]:
+def _literal_text(source: str) -> str:
+    """Return the string literals and comments of Python source.
+
+    Bare host names are only looked for there, so that attribute access such
+    as ``thermostat.info`` is not mistaken for a domain.
+    """
+    kinds = {tokenize.STRING, tokenize.COMMENT, tokenize.FSTRING_MIDDLE}
+    tokens = tokenize.generate_tokens(io.StringIO(source).readline)
+    return "\n".join(token.string for token in tokens if token.type in kinds)
+
+
+def hosts_in(text: str, *, python: bool = False) -> set[str]:
+    """Return every host name or IP address that appears in ``text``."""
     found = {match.group(1).lower().rpartition("@")[2] for match in URL_HOST.finditer(text)}
     found = {host.split(":")[0] for host in found}
-    found |= {match.group(1).lower() for match in BARE_HOST.finditer(text)}
-    found |= set(IPV4.findall(text))
+    literal = _literal_text(text) if python else text
+    found |= {match.group(1).lower() for match in BARE_HOST.finditer(literal)}
+    found |= set(IPV4.findall(literal))
     return found
 
 
 def test_host_scanner_catches_what_it_should() -> None:
     sample = """
-        url = "https://api.daikinskyport.com/users/auth/login"
-        other = 'wss://Example.ORG:8443/socket'
-        bare = "telemetry.example.io"
-        ip = "10.0.0.5"
-        fine = f"https://{API_HOST}/v1"
-        version = "1.2.3"
-    """
-    assert hosts_in(sample) == {
+url = "https://api.daikinskyport.com/users/auth/login"
+other = 'wss://Example.ORG:8443/socket'
+bare = "telemetry.example.io"
+ip = "10.0.0.5"
+# see docs.example.net for details
+joined = f"{scheme}://{prefix}.example.dev/path"
+fine = f"https://{API_HOST}/v1"
+version = "1.2.3"
+value = thermostat.info
+"""
+    assert hosts_in(sample, python=True) == {
         "api.daikinskyport.com",
         "example.org",
         "telemetry.example.io",
         "10.0.0.5",
+        "docs.example.net",
+        "example.dev",  # a host assembled inside an f-string is still seen
     }
+    assert "thermostat.info" in hosts_in(sample)
 
 
 def test_source_files_were_found() -> None:
@@ -62,7 +83,7 @@ def test_source_files_were_found() -> None:
 
 @pytest.mark.parametrize("path", SOURCE_FILES, ids=lambda p: str(p.relative_to(ROOT)))
 def test_only_the_official_api_host_appears_in_source(path: Path) -> None:
-    hosts = hosts_in(path.read_text(encoding="utf-8"))
+    hosts = hosts_in(path.read_text(encoding="utf-8"), python=path.suffix == ".py")
     assert hosts <= {ALLOWED_HOST}, f"unexpected host(s) in {path.name}: {hosts - {ALLOWED_HOST}}"
 
 
