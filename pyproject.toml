@@ -1,0 +1,43 @@
+[project]
+name = "ha-daikinone"
+version = "0.1.0"
+description = "Home Assistant custom integration for Daikin One thermostats using the official Open API"
+requires-python = ">=3.14.2"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "mypy>=1.18",
+    "pytest-homeassistant-custom-component==0.13.372",
+    "ruff>=0.17.0",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "--strict-markers -p no:cacheprovider"
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "ASYNC", "S", "PL", "C4", "PT", "RET", "TID", "G", "LOG"]
+ignore = [
+    "PLR0913", # explicit keyword arguments are clearer than bundling
+    "PLR2004", # magic values are fine in tests and enum tables
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S105", "S106", "PLR0911", "PLR0912", "PLR0915"]
+"scripts/**" = ["T201"]
+
+[tool.mypy]
+python_version = "3.14"
+strict = true
+files = ["custom_components", "tests"]
+explicit_package_bases = true
+namespace_packages = true

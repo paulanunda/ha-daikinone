@@ -1,0 +1,31 @@
+[tools]
+python = "3.14.8"
+uv = "0.13.0"
+
+[tasks.install]
+description = "Create the virtualenv and install locked dependencies"
+run = "uv sync --locked"
+
+[tasks.test]
+description = "Run the offline test suite"
+run = "uv run pytest"
+
+[tasks.lint]
+description = "Lint and check formatting"
+run = ["uv run ruff check .", "uv run ruff format --check ."]
+
+[tasks.format]
+description = "Apply formatting and safe lint fixes"
+run = ["uv run ruff check --fix .", "uv run ruff format ."]
+
+[tasks.typecheck]
+description = "Type check the integration, scripts, and tests"
+run = "uv run mypy"
+
+[tasks.check]
+description = "Lint, type check, and test"
+depends = ["lint", "typecheck", "test"]
+
+[tasks.live-check]
+description = "Read-only check against the real Daikin API (needs mise.local.toml credentials)"
+run = "uv run python scripts/live_check.py"
