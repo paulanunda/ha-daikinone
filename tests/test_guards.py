@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import ast
 import io
+import json
 import re
+import sys
 import tokenize
 from pathlib import Path
 
@@ -152,3 +154,71 @@ def test_session_request_is_called_in_exactly_one_place() -> None:
             ):
                 hits.append((path.name, node.func.attr))
     assert hits == [("client.py", "request")]
+
+
+# --------------------------------------------------------------- packaging
+
+
+def test_manifest_declares_no_third_party_requirements() -> None:
+    manifest = json.loads((INTEGRATION / "manifest.json").read_text(encoding="utf-8"))
+    assert manifest["domain"] == "daikinone"
+    assert manifest["requirements"] == []
+    assert manifest["dependencies"] == []
+    assert manifest["config_flow"] is True
+    assert manifest["iot_class"] == "cloud_polling"
+    assert re.fullmatch(r"\d+\.\d+\.\d+", manifest["version"])
+
+
+# Modules that ship with Python or with every Home Assistant installation.
+PROVIDED_BY_HOME_ASSISTANT = {"homeassistant", "aiohttp", "probatio"}
+
+
+def test_integration_imports_only_what_home_assistant_guarantees() -> None:
+    third_party: set[str] = set()
+    for path in sorted(INTEGRATION.rglob("*.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                names = [alias.name for alias in node.names]
+            elif isinstance(node, ast.ImportFrom) and node.level == 0:
+                names = [node.module or ""]
+            else:
+                continue
+            for name in names:
+                top = name.split(".")[0]
+                if top not in sys.stdlib_module_names:
+                    third_party.add(top)
+    assert third_party <= PROVIDED_BY_HOME_ASSISTANT
+
+
+def test_hacs_layout() -> None:
+    hacs = json.loads((ROOT / "hacs.json").read_text(encoding="utf-8"))
+    assert hacs["name"]
+    assert [p.name for p in (ROOT / "custom_components").iterdir() if p.is_dir()] == ["daikinone"]
+    assert (INTEGRATION / "translations" / "en.json").is_file()
+
+
+def test_live_check_script_is_read_only() -> None:
+    """The live check may fetch a token and read; it must never write."""
+    source = (ROOT / "scripts" / "live_check.py").read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    called = {
+        node.func.attr
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+    }
+    assert {"authenticate", "list_devices", "get_thermostat"} <= called
+    assert not {name for name in called if name.startswith("set_")}
+    assert not {"_request", "request", "put", "post", "patch", "delete"} & called
+    strings = {
+        node.value
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Constant) and isinstance(node.value, str)
+    }
+    assert "PUT" not in strings
+
+
+def test_local_credentials_file_is_ignored_and_untracked() -> None:
+    ignored = (ROOT / ".gitignore").read_text(encoding="utf-8").split()
+    assert "mise.local.toml" in ignored
+    assert not (ROOT / ".envrc").exists()
