@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import dataclasses
+import json
 from enum import IntEnum
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -21,6 +23,8 @@ from custom_components.daikinone.api import (
 )
 from custom_components.daikinone.api.models import THERMOSTAT_FIELDS, parse_device_list
 from tests.fake_daikin import CONTRACT, example_state
+
+FIXTURES = Path(__file__).parent.parent / "fixtures"
 
 FIELD_TO_ATTR = {
     "equipmentStatus": "equipment_status",
@@ -67,7 +71,7 @@ BAD_VALUES: dict[str, list[Any]] = {
         for name in NUMBER_FIELDS
     },
     **{name: [*BAD_FOR_ALL, 0, 1, "true", 0.0] for name in BOOLEAN_FIELDS},
-    "modeEmHeatAvailable": [*BAD_FOR_ALL, True, 2, -1, 0.5],
+    "modeEmHeatAvailable": [*BAD_FOR_ALL, 2, -1, 0.5],
 }
 CORRUPTIONS = [(name, value) for name, values in BAD_VALUES.items() for value in values]
 
@@ -219,3 +223,36 @@ def test_malformed_device_list_entries_are_skipped_individually() -> None:
 def test_non_array_device_list_is_rejected(payload: Any) -> None:
     with pytest.raises(MalformedResponseError):
         parse_device_list(payload)
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"), [(0, False), (1, True), (False, False), (True, True), (1.0, True)]
+)
+def test_emergency_heat_flag_accepts_documented_integers_and_live_booleans(
+    value: Any, expected: bool
+) -> None:
+    state = ThermostatState.from_api(example_state(modeEmHeatAvailable=value))
+    assert state.emergency_heat_available is expected
+
+
+def test_parses_the_response_shape_observed_live() -> None:
+    """A real response differs from the documentation in two ways; neither loses data."""
+    live = json.loads((FIXTURES / "live_thermostat.json").read_text(encoding="utf-8"))
+    live.pop("_about")
+    documented = set(CONTRACT["endpoints"]["get_device"]["response_example"])
+    # One field more than documented, and none fewer.
+    assert set(live) - documented == {"equipmentCommunication"}
+    assert documented <= set(live)
+    # Documented as an integer, sent as a boolean.
+    assert live["modeEmHeatAvailable"] is False
+
+    state = ThermostatState.from_api(live)
+    parsed = _without_raw(state)
+    assert None not in parsed.values(), "every documented field parsed"
+    assert state.emergency_heat_available is False
+    assert state.mode is Mode.HEAT
+    assert state.equipment_status is EquipmentStatus.IDLE
+    assert (state.heat_setpoint, state.cool_setpoint) == (23.3, 25.6)
+    # Whole numbers arrive as JSON integers and are still read as floats.
+    assert (state.temp_indoor, state.setpoint_minimum, state.setpoint_delta) == (24.0, 10.0, 2.0)
+    assert state.geofencing_enabled is True

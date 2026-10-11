@@ -205,7 +205,7 @@ async def test_features_follow_the_allowed_modes_not_the_current_one(
     assert not features & ClimateEntityFeature.FAN_MODE
 
 
-@pytest.mark.parametrize("available", [0, None, 2, "yes"])
+@pytest.mark.parametrize("available", [0, False, None, 2, "yes"])
 async def test_emergency_heat_is_hidden_unless_reported_available(
     hass: HomeAssistant, daikin: FakeDaikin, entry: MockConfigEntry, available: Any
 ) -> None:
@@ -219,10 +219,11 @@ async def test_emergency_heat_is_hidden_unless_reported_available(
     assert puts(daikin) == []
 
 
+@pytest.mark.parametrize("available", [1, True])
 async def test_emergency_heat_when_available(
-    hass: HomeAssistant, daikin: FakeDaikin, entry: MockConfigEntry
+    hass: HomeAssistant, daikin: FakeDaikin, entry: MockConfigEntry, available: Any
 ) -> None:
-    climate = await start(hass, daikin, entry, modeEmHeatAvailable=1, mode=1)
+    climate = await start(hass, daikin, entry, modeEmHeatAvailable=available, mode=1)
     assert climate.attributes["preset_modes"] == ["none", "emergency_heat"]
     assert climate.attributes["preset_mode"] == "none"
     assert ClimateEntityFeature(climate.attributes["supported_features"]) & (

@@ -1,0 +1,22 @@
+{
+  "_about": "Shape of a real GET /v1/devices/<id> response observed on 2026-10-11 from a Daikin One Touch (firmware 4.0.17) on a unitary system. Key set and JSON types are as received; the numbers are ordinary settings and readings.",
+  "equipmentStatus": 5,
+  "mode": 1,
+  "modeLimit": 1,
+  "modeEmHeatAvailable": false,
+  "fan": 0,
+  "fanCirculate": 0,
+  "fanCirculateSpeed": 0,
+  "heatSetpoint": 23.3,
+  "coolSetpoint": 25.6,
+  "setpointDelta": 2,
+  "setpointMinimum": 10,
+  "setpointMaximum": 32.2,
+  "tempIndoor": 24,
+  "humIndoor": 58,
+  "tempOutdoor": 19,
+  "humOutdoor": 82,
+  "scheduleEnabled": false,
+  "geofencingEnabled": true,
+  "equipmentCommunication": 0
+}

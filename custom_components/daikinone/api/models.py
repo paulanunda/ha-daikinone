@@ -140,7 +140,13 @@ def _as_bool(value: object) -> bool | None:
 
 
 def _as_flag(value: object) -> bool | None:
-    """Return a documented 0/1 integer flag as a bool, otherwise None."""
+    """Return an on/off flag as a bool, otherwise None.
+
+    Daikin documents ``modeEmHeatAvailable`` as the integer 0 or 1, but the live
+    service sends a JSON boolean. Both forms are accepted.
+    """
+    if isinstance(value, bool):
+        return value
     number = _as_int(value)
     if number == 0:
         return False
