@@ -5,6 +5,9 @@ Daikin's documented [Open API](https://www.daikinone.com/openapi/documentation/i
 at `integrator-api.daikinskyport.com`. It never asks for the Daikin account
 password and has no third-party dependencies.
 
+This is an independent, unofficial project. "Official" describes the API it
+talks to, not the integration. See the [disclaimer](#disclaimer).
+
 Built and tested against Home Assistant 2026.10.
 
 ## Setup
@@ -114,6 +117,27 @@ Each thermostat is one device with these entities.
 
 `docs/daikin-open-api/contract.json` holds the documented contract the tests
 check against, plus what real responses were observed to do differently.
+
+## Disclaimer
+
+- **Not affiliated with Daikin.** This project is not affiliated with,
+  endorsed by, or supported by Daikin Comfort Technologies, its affiliates, or
+  the Home Assistant project. Daikin, Daikin One, Amana, and Goodman are
+  trademarks of their respective owners and are used here only to describe
+  compatibility.
+- **Daikin's terms apply to you.** To get an integrator token and an API key
+  you accept Daikin's Integration Token Terms, B2B Terms, and Open API License
+  Terms in the app. Your use of the API through this integration is subject to
+  those terms and is your responsibility.
+- **It controls real equipment.** Do not rely on it for freeze protection,
+  safety, or looking after an unattended property. It depends on Daikin's
+  cloud service, which can be unreachable, and Daikin can change or withdraw
+  the API at any time.
+- **Limited testing.** It has only been tested against a Daikin One Touch
+  thermostat (firmware 4.0.17) on a unitary system.
+- **No warranty and no guaranteed support.** This is a personal project,
+  provided as is under the [MIT License](LICENSE). Report problems in this
+  repository's issues, not to Daikin.
 
 ## Development
 

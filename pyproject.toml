@@ -2,6 +2,7 @@
 name = "ha-daikinone"
 version = "0.1.0"
 description = "Home Assistant custom integration for Daikin One thermostats using the official Open API"
+license = "MIT"
 requires-python = ">=3.14.2"
 dependencies = []
 

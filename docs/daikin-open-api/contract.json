@@ -6,11 +6,7 @@
     "pages_last_updated": "2026-01-14",
     "retrieved": "2026-10-11",
     "documentation_html_sha256": "a8071ef408e2f6e2bdb4b53ceb77a9e06437a88991a2e2b2f8dc3bd157ceddcc",
-    "overview_html_sha256": "f0f9c85d982db4abaf56ab2748345f976a402c103651c561dbccf3129368937c",
-    "text_copies": [
-      "documentation.txt",
-      "overview.txt"
-    ]
+    "overview_html_sha256": "f0f9c85d982db4abaf56ab2748345f976a402c103651c561dbccf3129368937c"
   },
   "transport": {
     "base_url": "https://integrator-api.daikinskyport.com",
