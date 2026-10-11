@@ -11,7 +11,13 @@ from .api import DaikinOneClient, create_ssl_context
 from .const import CONF_INTEGRATOR_TOKEN, DOMAIN
 from .coordinator import DaikinOneConfigEntry, DaikinOneCoordinator
 
-PLATFORMS: list[Platform] = [Platform.CLIMATE]
+PLATFORMS: list[Platform] = [
+    Platform.BINARY_SENSOR,
+    Platform.CLIMATE,
+    Platform.SELECT,
+    Platform.SENSOR,
+    Platform.SWITCH,
+]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: DaikinOneConfigEntry) -> bool:

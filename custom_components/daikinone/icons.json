@@ -1,0 +1,31 @@
+{
+  "entity": {
+    "binary_sensor": {
+      "heating": {
+        "default": "mdi:fire"
+      },
+      "cooling": {
+        "default": "mdi:snowflake"
+      },
+      "fan": {
+        "default": "mdi:fan"
+      },
+      "geofencing": {
+        "default": "mdi:map-marker-radius"
+      }
+    },
+    "select": {
+      "fan_circulation_mode": {
+        "default": "mdi:fan-clock"
+      },
+      "fan_circulation_speed": {
+        "default": "mdi:fan-chevron-up"
+      }
+    },
+    "switch": {
+      "schedule": {
+        "default": "mdi:calendar-clock"
+      }
+    }
+  }
+}
