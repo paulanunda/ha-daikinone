@@ -163,6 +163,9 @@
     },
     "mode_not_supported": {
       "message": "{name} does not allow the mode {mode}."
+    },
+    "single_setpoint_needs_heat_or_cool": {
+      "message": "{name} is not in heat or cool mode, so a single temperature has no meaning. Choose heat or cool in the same request, or give a low and a high temperature."
     }
   }
 }
