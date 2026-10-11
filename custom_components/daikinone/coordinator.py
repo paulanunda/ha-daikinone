@@ -144,6 +144,10 @@ class DaikinOneCoordinator(DataUpdateCoordinator[dict[str, ThermostatData]]):
                     if isinstance(failure, kind):
                         raise failure
         except AuthenticationError as err:
+            # Home Assistant starts the re-authentication flow. Stop polling so
+            # rejected credentials are not presented to Daikin again and again;
+            # a successful re-authentication reloads the entry and starts afresh.
+            self.update_interval = None
             raise ConfigEntryAuthFailed(
                 translation_domain=DOMAIN, translation_key="auth_failed"
             ) from err
@@ -341,6 +345,7 @@ class DaikinOneCoordinator(DataUpdateCoordinator[dict[str, ThermostatData]]):
         try:
             await request
         except AuthenticationError:
+            self.update_interval = None
             self.config_entry.async_start_reauth(self.hass)
             raise self._error("auth_failed", device_id) from None
         except RateLimitError as err:
