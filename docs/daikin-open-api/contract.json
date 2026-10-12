@@ -359,9 +359,11 @@
     "not_observed": [
       "An offline thermostat, so the status code and endpoint behavior for DeviceOfflineException remain unknown.",
       "HTTP 429, so whether Retry-After is sent remains unknown.",
-      "PUT /schedule and PUT /fan.",
+      "PUT /schedule.",
+      "A /fan write with fanCirculate 2 (schedule) or fanCirculateSpeed 2 (high), and one sent while the schedule is on.",
       "A /msp write that changes the mode, one sent while the schedule is on, and one that violates the limits or delta."
     ],
-    "set_mode_setpoints": "Two rounds of PUT /v1/devices/<id>/msp on both thermostats in heat mode (heat setpoint 23.3 -> 21.1 -> 23.3, mode and cool setpoint resent unchanged) returned HTTP 200. A read 15 seconds later returned exactly the values sent."
+    "set_mode_setpoints": "Two rounds of PUT /v1/devices/<id>/msp on both thermostats in heat mode (heat setpoint 23.3 -> 21.1 -> 23.3, mode and cool setpoint resent unchanged) returned HTTP 200. A read 15 seconds later returned exactly the values sent.",
+    "set_fan": "PUT /v1/devices/<id>/fan returned HTTP 200 with the body {\"message\": \"Write sent\"} every time, and a read 15 seconds later returned exactly the values sent. On both thermostats: fanCirculateSpeed 0 -> 1 -> 0 with fanCirculate resent as 0. On one thermostat: fanCirculate 0 -> 1 -> 0 with fanCirculateSpeed 0. Fifteen seconds after fanCirculate was set to 1, equipmentStatus was still 5 (idle) and fan was still 0 (auto), so neither field is known to reflect circulation."
   }
 }
