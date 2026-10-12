@@ -202,7 +202,26 @@ async def test_features_follow_the_allowed_modes_not_the_current_one(
     assert features & ClimateEntityFeature.TURN_OFF
     assert features & ClimateEntityFeature.TURN_ON
     assert not features & ClimateEntityFeature.PRESET_MODE
-    assert not features & ClimateEntityFeature.FAN_MODE
+    assert features & ClimateEntityFeature.FAN_MODE
+
+
+@pytest.mark.parametrize(
+    ("circulate", "fan_mode"),
+    [(0, "off"), (1, "on"), (2, "schedule"), (3, None), (None, None), ("on", None)],
+)
+async def test_fan_mode_is_the_fan_circulation_setting(
+    hass: HomeAssistant,
+    daikin: FakeDaikin,
+    entry: MockConfigEntry,
+    circulate: Any,
+    fan_mode: str | None,
+) -> None:
+    climate = await start(hass, daikin, entry, fanCirculate=circulate)
+    assert climate.attributes["fan_modes"] == ["off", "on", "schedule"]
+    assert climate.attributes["fan_mode"] == fan_mode
+    # An unknown fan setting does not affect the rest of the entity.
+    assert climate.state == "off"
+    assert get(hass, OTHER).attributes["fan_mode"] == "on"
 
 
 @pytest.mark.parametrize("available", [0, False, None, 2, "yes"])
@@ -559,6 +578,59 @@ async def test_setpoint_with_no_room_for_the_delta_is_refused(
     assert puts(daikin) == []
 
 
+@pytest.mark.parametrize("mode", [0, 1])
+async def test_set_fan_mode_changes_circulation_and_keeps_the_speed(
+    hass: HomeAssistant, daikin: FakeDaikin, entry: MockConfigEntry, mode: int
+) -> None:
+    await start(hass, daikin, entry, mode=mode, fanCirculateSpeed=2, scheduleEnabled=True)
+    await call(hass, "set_fan_mode", fan_mode="schedule")
+    await call(hass, "set_fan_mode", fan_mode="off")
+    await call(hass, "set_fan_mode", fan_mode="on")
+    assert [(c.path, c.json) for c in daikin.calls if c.method == "PUT"] == [
+        (f"{MAIN}/fan", {"fanCirculate": 2, "fanCirculateSpeed": 2}),
+        (f"{MAIN}/fan", {"fanCirculate": 0, "fanCirculateSpeed": 2}),
+        (f"{MAIN}/fan", {"fanCirculate": 1, "fanCirculateSpeed": 2}),
+    ]
+    assert get(hass).attributes["fan_mode"] == "on"
+    # The select shows the same setting, and the schedule is left alone.
+    assert get(hass, "select.main_floor_fan_circulation_mode").state == "always_on"
+    assert get(hass, "switch.main_floor_schedule").state == "on"
+    assert get(hass, OTHER).attributes["fan_mode"] == "on"
+
+
+async def test_fan_mode_follows_the_select(
+    hass: HomeAssistant, daikin: FakeDaikin, entry: MockConfigEntry
+) -> None:
+    await start(hass, daikin, entry)
+    await hass.services.async_call(
+        "select",
+        "select_option",
+        {"entity_id": "select.main_floor_fan_circulation_mode", "option": "schedule"},
+        blocking=True,
+    )
+    assert get(hass).attributes["fan_mode"] == "schedule"
+
+
+@pytest.mark.parametrize("fan_mode", ["auto", "always_on", "low"])
+async def test_fan_mode_that_is_not_offered_is_refused(
+    hass: HomeAssistant, daikin: FakeDaikin, entry: MockConfigEntry, fan_mode: str
+) -> None:
+    await start(hass, daikin, entry)
+    with pytest.raises(ServiceValidationError):
+        await call(hass, "set_fan_mode", fan_mode=fan_mode)
+    assert puts(daikin) == []
+
+
+async def test_set_fan_mode_is_refused_when_the_speed_is_unknown(
+    hass: HomeAssistant, daikin: FakeDaikin, entry: MockConfigEntry
+) -> None:
+    await start(hass, daikin, entry, fanCirculateSpeed=None)
+    with pytest.raises(HomeAssistantError) as err:
+        await call(hass, "set_fan_mode", fan_mode="off")
+    assert err.value.translation_key == "state_unknown"
+    assert puts(daikin) == []
+
+
 async def test_command_to_an_unavailable_thermostat_sends_nothing(
     hass: HomeAssistant,
     daikin: FakeDaikin,
@@ -572,6 +644,7 @@ async def test_command_to_an_unavailable_thermostat_sends_nothing(
         ("set_hvac_mode", {"hvac_mode": "cool"}),
         ("set_temperature", {"temperature": 70}),
         ("turn_off", {}),
+        ("set_fan_mode", {"fan_mode": "on"}),
     ):
         try:
             await call(hass, service, **data)

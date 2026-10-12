@@ -51,7 +51,7 @@ Each thermostat is one device with these entities.
 
 | Entity | What it does |
 |---|---|
-| Climate | Mode (off, heat, cool, heat/cool), setpoints, indoor temperature and humidity, and current action (heating, cooling, drying, fan, idle, off). |
+| Climate | Mode (off, heat, cool, heat/cool), setpoints, fan mode, indoor temperature and humidity, and current action (heating, cooling, drying, fan, idle, off). |
 | Indoor temperature, Indoor humidity | Readings from the thermostat. |
 | Outdoor temperature, Outdoor humidity | Outdoor readings as the thermostat reports them. |
 | Heating setpoint, Cooling setpoint | Both setpoints in every mode, including the one the climate entity hides in heat, cool, and off. |
@@ -82,6 +82,11 @@ Each thermostat is one device with these entities.
 - **Any mode or setpoint change turns the schedule off.** That is how Daikin's
   API works. The Schedule switch shows off immediately; turn it back on to
   hand control back to the thermostat's schedule.
+- **Fan mode is Daikin's fan circulation setting:** off, on (always on), or
+  schedule. It changes the same setting as the Fan circulation mode select and
+  keeps the circulation speed. It works in every mode, including off, and does
+  not turn the schedule off. The thermostat's own auto/on fan setting is the
+  read-only System fan sensor.
 - **Emergency heat** appears as a preset only on thermostats that report it.
 - **Temperatures** are exchanged with Daikin in Celsius, in 0.1° steps. Home
   Assistant converts for display, so a setpoint of 72 °F is sent as 22.2 °C.

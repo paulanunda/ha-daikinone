@@ -63,6 +63,13 @@
     "climate": {
       "thermostat": {
         "state_attributes": {
+          "fan_mode": {
+            "state": {
+              "off": "Off",
+              "on": "Always on",
+              "schedule": "On a schedule"
+            }
+          },
           "preset_mode": {
             "state": {
               "none": "None",

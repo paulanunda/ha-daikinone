@@ -7,6 +7,10 @@ Mapping between Daikin and Home Assistant:
   means "following a schedule", which is the separate schedule switch here.)
 * Daikin "emergency heat" is the ``heat`` mode with the ``emergency_heat``
   preset, offered only when the thermostat reports it available.
+* Daikin's fan circulation setting is the fan mode: ``off``, ``on`` (always
+  on), or ``schedule``. The fan circulation mode select changes the same
+  setting. The thermostat's own auto/on fan setting is read-only and is the
+  separate system fan sensor.
 * All temperatures are exchanged with Daikin in Celsius. Home Assistant
   converts to and from the unit it is configured to display.
 """
@@ -20,6 +24,8 @@ from homeassistant.components.climate.const import (
     ATTR_HVAC_MODE,
     ATTR_TARGET_TEMP_HIGH,
     ATTR_TARGET_TEMP_LOW,
+    FAN_OFF,
+    FAN_ON,
     PRESET_NONE,
     ClimateEntityFeature,
     HVACAction,
@@ -30,7 +36,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .api import EquipmentStatus, Mode, ModeLimit
+from .api import EquipmentStatus, FanCirculate, Mode, ModeLimit
 from .const import DOMAIN
 from .coordinator import DaikinOneConfigEntry, DaikinOneCoordinator
 from .entity import DaikinOneEntity, async_add_thermostat_entities
@@ -39,6 +45,7 @@ from .entity import DaikinOneEntity, async_add_thermostat_entities
 PARALLEL_UPDATES = 0
 
 PRESET_EMERGENCY_HEAT: Final = "emergency_heat"
+FAN_SCHEDULE: Final = "schedule"
 
 MODE_TO_HVAC: Final = {
     Mode.OFF: HVACMode.OFF,
@@ -68,6 +75,12 @@ STATUS_TO_ACTION: Final = {
     EquipmentStatus.IDLE: HVACAction.IDLE,
 }
 HEATING_MODES: Final = (Mode.HEAT, Mode.EMERGENCY_HEAT)
+CIRCULATE_TO_FAN_MODE: Final = {
+    FanCirculate.OFF: FAN_OFF,
+    FanCirculate.ALWAYS_ON: FAN_ON,
+    FanCirculate.SCHEDULE: FAN_SCHEDULE,
+}
+FAN_MODE_TO_CIRCULATE: Final = {name: value for value, name in CIRCULATE_TO_FAN_MODE.items()}
 
 
 async def async_setup_entry(
@@ -93,6 +106,7 @@ class DaikinOneClimate(DaikinOneEntity, ClimateEntity):
     def __init__(self, coordinator: DaikinOneCoordinator, device_id: str) -> None:
         """Create the climate entity."""
         super().__init__(coordinator, device_id, "climate")
+        self._attr_fan_modes = list(FAN_MODE_TO_CIRCULATE)
 
     # ------------------------------------------------------------------ state
 
@@ -134,7 +148,11 @@ class DaikinOneClimate(DaikinOneEntity, ClimateEntity):
         Keeping them independent of the current mode lets one service call set
         a mode and its setpoint together even while the thermostat is off.
         """
-        features = ClimateEntityFeature.TURN_OFF | ClimateEntityFeature.TURN_ON
+        features = (
+            ClimateEntityFeature.TURN_OFF
+            | ClimateEntityFeature.TURN_ON
+            | ClimateEntityFeature.FAN_MODE
+        )
         modes = self.hvac_modes
         if HVACMode.HEAT in modes or HVACMode.COOL in modes:
             features |= ClimateEntityFeature.TARGET_TEMPERATURE
@@ -195,6 +213,14 @@ class DaikinOneClimate(DaikinOneEntity, ClimateEntity):
         if state is None or state.setpoint_maximum is None:
             return super().max_temp
         return state.setpoint_maximum
+
+    @property
+    def fan_mode(self) -> str | None:
+        """The fan circulation setting."""
+        state = self.thermostat_state
+        if state is None or state.fan_circulate is None:
+            return None
+        return CIRCULATE_TO_FAN_MODE[state.fan_circulate]
 
     @property
     def preset_modes(self) -> list[str] | None:
@@ -275,3 +301,9 @@ class DaikinOneClimate(DaikinOneEntity, ClimateEntity):
         elif state is not None and state.mode is Mode.EMERGENCY_HEAT:
             # Leaving emergency heat returns to ordinary heat.
             await self.coordinator.async_set_mode_setpoints(self._device_id, mode=Mode.HEAT)
+
+    async def async_set_fan_mode(self, fan_mode: str) -> None:
+        """Change the fan circulation setting, keeping its speed."""
+        await self.coordinator.async_set_fan(
+            self._device_id, circulate=FAN_MODE_TO_CIRCULATE[fan_mode]
+        )

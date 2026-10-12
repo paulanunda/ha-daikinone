@@ -1,5 +1,18 @@
 {
   "entity": {
+    "climate": {
+      "thermostat": {
+        "state_attributes": {
+          "fan_mode": {
+            "default": "mdi:fan",
+            "state": {
+              "off": "mdi:fan-off",
+              "schedule": "mdi:fan-clock"
+            }
+          }
+        }
+      }
+    },
     "binary_sensor": {
       "heating": {
         "default": "mdi:fire"
