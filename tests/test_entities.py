@@ -25,6 +25,8 @@ ENTITIES = {
     "sensor.{}_indoor_humidity": "indoor_humidity",
     "sensor.{}_outdoor_temperature": "outdoor_temperature",
     "sensor.{}_outdoor_humidity": "outdoor_humidity",
+    "sensor.{}_heating_setpoint": "heating_setpoint",
+    "sensor.{}_cooling_setpoint": "cooling_setpoint",
     "sensor.{}_equipment_status": "equipment_status",
     "sensor.{}_system_fan": "system_fan",
     "binary_sensor.{}_online": "online",
@@ -100,6 +102,8 @@ async def test_entity_names(
         "sensor.main_floor_indoor_humidity": "Main Floor Indoor humidity",
         "sensor.main_floor_outdoor_temperature": "Main Floor Outdoor temperature",
         "sensor.main_floor_outdoor_humidity": "Main Floor Outdoor humidity",
+        "sensor.main_floor_heating_setpoint": "Main Floor Heating setpoint",
+        "sensor.main_floor_cooling_setpoint": "Main Floor Cooling setpoint",
         "sensor.main_floor_equipment_status": "Main Floor Equipment status",
         "sensor.main_floor_system_fan": "Main Floor System fan",
         "binary_sensor.main_floor_online": "Main Floor Online",
@@ -126,6 +130,8 @@ async def test_values_from_the_documented_example(
         "sensor.{}_indoor_humidity": "50.0",
         "sensor.{}_outdoor_temperature": "23.0",  # -5.0 C
         "sensor.{}_outdoor_humidity": "81.0",
+        "sensor.{}_heating_setpoint": "68.9",  # 20.5 C
+        "sensor.{}_cooling_setpoint": "74.3",  # 23.5 C
         "sensor.{}_equipment_status": "idle",
         "sensor.{}_system_fan": "auto",
         "binary_sensor.{}_online": "on",
@@ -184,6 +190,15 @@ async def test_equipment_status_sensors(
     assert value(hass, "binary_sensor.main_floor_online") == "on"
 
 
+@pytest.mark.parametrize("mode", [0, 1, 2, 3, 4])
+async def test_setpoint_sensors_show_both_setpoints_in_every_mode(
+    hass: HomeAssistant, daikin: FakeDaikin, entry: MockConfigEntry, mode: int
+) -> None:
+    await start(hass, daikin, entry, mode=mode, modeEmHeatAvailable=1)
+    assert value(hass, "sensor.main_floor_heating_setpoint") == "68.9"
+    assert value(hass, "sensor.main_floor_cooling_setpoint") == "74.3"
+
+
 @pytest.mark.parametrize(("fan", "expected"), [(0, "auto"), (1, "on"), (2, "unknown")])
 async def test_system_fan_sensor(
     hass: HomeAssistant,
@@ -212,6 +227,8 @@ BAD: list[Any] = [None, "banana", 9999, -9999, [], {"a": 1}]
         ("humIndoor", "sensor.{}_indoor_humidity"),
         ("tempOutdoor", "sensor.{}_outdoor_temperature"),
         ("humOutdoor", "sensor.{}_outdoor_humidity"),
+        ("heatSetpoint", "sensor.{}_heating_setpoint"),
+        ("coolSetpoint", "sensor.{}_cooling_setpoint"),
         ("fan", "sensor.{}_system_fan"),
         ("geofencingEnabled", "binary_sensor.{}_geofencing"),
         ("fanCirculate", "select.{}_fan_circulation_mode"),

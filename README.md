@@ -54,6 +54,7 @@ Each thermostat is one device with these entities.
 | Climate | Mode (off, heat, cool, heat/cool), setpoints, indoor temperature and humidity, and current action (heating, cooling, drying, fan, idle, off). |
 | Indoor temperature, Indoor humidity | Readings from the thermostat. |
 | Outdoor temperature, Outdoor humidity | Outdoor readings as the thermostat reports them. |
+| Heating setpoint, Cooling setpoint | Both setpoints in every mode, including the one the climate entity hides in heat, cool, and off. |
 | Equipment status | What the equipment is doing: heating, cooling, dehumidifying (overcooling), fan, or idle. |
 | System fan | The fan setting made at the thermostat, auto or on (read-only). |
 | Online | On when the last read succeeded, off when Daikin reports the thermostat offline, unavailable when Daikin itself could not be reached. |

@@ -85,6 +85,12 @@
       "outdoor_humidity": {
         "name": "Outdoor humidity"
       },
+      "heating_setpoint": {
+        "name": "Heating setpoint"
+      },
+      "cooling_setpoint": {
+        "name": "Cooling setpoint"
+      },
       "equipment_status": {
         "name": "Equipment status",
         "state": {

@@ -1,4 +1,4 @@
-"""Temperature, humidity, equipment status, and system fan sensors for a Daikin One thermostat."""
+"""Temperature, humidity, setpoint, equipment status, and system fan sensors."""
 
 from __future__ import annotations
 
@@ -77,6 +77,24 @@ SENSORS: tuple[DaikinOneSensorDescription, ...] = (
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         value=lambda state: state.hum_outdoor,
+    ),
+    # Daikin reports both setpoints in every mode. The climate entity shows only
+    # the ones the current mode uses, so these keep an unbroken history of each.
+    DaikinOneSensorDescription(
+        key="heating_setpoint",
+        translation_key="heating_setpoint",
+        device_class=SensorDeviceClass.TEMPERATURE,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        state_class=SensorStateClass.MEASUREMENT,
+        value=lambda state: state.heat_setpoint,
+    ),
+    DaikinOneSensorDescription(
+        key="cooling_setpoint",
+        translation_key="cooling_setpoint",
+        device_class=SensorDeviceClass.TEMPERATURE,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        state_class=SensorStateClass.MEASUREMENT,
+        value=lambda state: state.cool_setpoint,
     ),
     DaikinOneSensorDescription(
         key="equipment_status",
