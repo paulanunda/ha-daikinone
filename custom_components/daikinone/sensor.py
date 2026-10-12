@@ -1,9 +1,10 @@
-"""Temperature and humidity sensors for a Daikin One thermostat."""
+"""Temperature, humidity, equipment status, and system fan sensors for a Daikin One thermostat."""
 
 from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Final
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -11,23 +12,37 @@ from homeassistant.components.sensor import (
     SensorEntityDescription,
     SensorStateClass,
 )
-from homeassistant.const import PERCENTAGE, UnitOfTemperature
+from homeassistant.const import PERCENTAGE, EntityCategory, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .api import ThermostatState
+from .api import EquipmentStatus, FanState, ThermostatState
 from .coordinator import DaikinOneConfigEntry, DaikinOneCoordinator
 from .entity import DaikinOneEntity, async_add_thermostat_entities
 
 # Read-only; all data comes from the coordinator.
 PARALLEL_UPDATES = 0
 
+# Overcooling to dehumidify keeps its own state here; the Cooling binary sensor
+# and the climate entity fold it into cooling and drying.
+EQUIPMENT_STATUS_OPTIONS: Final = {
+    EquipmentStatus.COOL: "cooling",
+    EquipmentStatus.OVERCOOL_FOR_DEHUM: "dehumidifying",
+    EquipmentStatus.HEAT: "heating",
+    EquipmentStatus.FAN: "fan",
+    EquipmentStatus.IDLE: "idle",
+}
+SYSTEM_FAN_OPTIONS: Final = {
+    FanState.AUTO: "auto",
+    FanState.ON: "on",
+}
+
 
 @dataclass(frozen=True, kw_only=True)
 class DaikinOneSensorDescription(SensorEntityDescription):
     """A sensor and where its value comes from."""
 
-    value: Callable[[ThermostatState], float | None]
+    value: Callable[[ThermostatState], float | str | None]
 
 
 SENSORS: tuple[DaikinOneSensorDescription, ...] = (
@@ -63,6 +78,26 @@ SENSORS: tuple[DaikinOneSensorDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         value=lambda state: state.hum_outdoor,
     ),
+    DaikinOneSensorDescription(
+        key="equipment_status",
+        translation_key="equipment_status",
+        device_class=SensorDeviceClass.ENUM,
+        options=list(EQUIPMENT_STATUS_OPTIONS.values()),
+        value=lambda state: (
+            EQUIPMENT_STATUS_OPTIONS[state.equipment_status]
+            if state.equipment_status is not None
+            else None
+        ),
+    ),
+    # The fan setting made at the thermostat. Daikin's API cannot change it.
+    DaikinOneSensorDescription(
+        key="system_fan",
+        translation_key="system_fan",
+        device_class=SensorDeviceClass.ENUM,
+        options=list(SYSTEM_FAN_OPTIONS.values()),
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value=lambda state: SYSTEM_FAN_OPTIONS[state.fan] if state.fan is not None else None,
+    ),
 )
 
 
@@ -97,7 +132,7 @@ class DaikinOneSensor(DaikinOneEntity, SensorEntity):
         self.entity_description = description
 
     @property
-    def native_value(self) -> float | None:
+    def native_value(self) -> float | str | None:
         """The reading, or None (shown as unknown) if Daikin sent nothing usable."""
         state = self.thermostat_state
         return self.entity_description.value(state) if state is not None else None

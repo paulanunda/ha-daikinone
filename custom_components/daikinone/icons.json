@@ -14,6 +14,14 @@
         "default": "mdi:map-marker-radius"
       }
     },
+    "sensor": {
+      "equipment_status": {
+        "default": "mdi:hvac"
+      },
+      "system_fan": {
+        "default": "mdi:fan-auto"
+      }
+    },
     "select": {
       "fan_circulation_mode": {
         "default": "mdi:fan-clock"

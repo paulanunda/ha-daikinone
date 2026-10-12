@@ -84,6 +84,23 @@
       },
       "outdoor_humidity": {
         "name": "Outdoor humidity"
+      },
+      "equipment_status": {
+        "name": "Equipment status",
+        "state": {
+          "cooling": "Cooling",
+          "dehumidifying": "Dehumidifying",
+          "heating": "Heating",
+          "fan": "Fan",
+          "idle": "Idle"
+        }
+      },
+      "system_fan": {
+        "name": "System fan",
+        "state": {
+          "auto": "Auto",
+          "on": "On"
+        }
       }
     },
     "binary_sensor": {

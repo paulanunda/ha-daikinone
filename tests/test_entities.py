@@ -25,6 +25,8 @@ ENTITIES = {
     "sensor.{}_indoor_humidity": "indoor_humidity",
     "sensor.{}_outdoor_temperature": "outdoor_temperature",
     "sensor.{}_outdoor_humidity": "outdoor_humidity",
+    "sensor.{}_equipment_status": "equipment_status",
+    "sensor.{}_system_fan": "system_fan",
     "binary_sensor.{}_online": "online",
     "binary_sensor.{}_heating": "heating",
     "binary_sensor.{}_cooling": "cooling",
@@ -98,6 +100,8 @@ async def test_entity_names(
         "sensor.main_floor_indoor_humidity": "Main Floor Indoor humidity",
         "sensor.main_floor_outdoor_temperature": "Main Floor Outdoor temperature",
         "sensor.main_floor_outdoor_humidity": "Main Floor Outdoor humidity",
+        "sensor.main_floor_equipment_status": "Main Floor Equipment status",
+        "sensor.main_floor_system_fan": "Main Floor System fan",
         "binary_sensor.main_floor_online": "Main Floor Online",
         "binary_sensor.main_floor_heating": "Main Floor Heating",
         "binary_sensor.main_floor_cooling": "Main Floor Cooling",
@@ -122,6 +126,8 @@ async def test_values_from_the_documented_example(
         "sensor.{}_indoor_humidity": "50.0",
         "sensor.{}_outdoor_temperature": "23.0",  # -5.0 C
         "sensor.{}_outdoor_humidity": "81.0",
+        "sensor.{}_equipment_status": "idle",
+        "sensor.{}_system_fan": "auto",
         "binary_sensor.{}_online": "on",
         "binary_sensor.{}_heating": "off",
         "binary_sensor.{}_cooling": "off",
@@ -136,33 +142,39 @@ async def test_values_from_the_documented_example(
     assert sensor.attributes["unit_of_measurement"] == "°F"
     assert sensor.attributes["device_class"] == "temperature"
     assert sensor.attributes["state_class"] == "measurement"
+    status = hass.states.get("sensor.main_floor_equipment_status")
+    assert status is not None
+    assert status.attributes["device_class"] == "enum"
+    assert status.attributes["options"] == ["cooling", "dehumidifying", "heating", "fan", "idle"]
 
 
 @pytest.mark.parametrize(
-    ("status", "heating", "cooling", "fan"),
+    ("status", "sensor", "heating", "cooling", "fan"),
     [
-        (1, "off", "on", "on"),
-        (2, "off", "on", "on"),
-        (3, "on", "off", "on"),
-        (4, "off", "off", "on"),
-        (5, "off", "off", "off"),
-        (0, "unknown", "unknown", "unknown"),
-        (6, "unknown", "unknown", "unknown"),
-        (99, "unknown", "unknown", "unknown"),
-        (None, "unknown", "unknown", "unknown"),
-        ("heat", "unknown", "unknown", "unknown"),
+        (1, "cooling", "off", "on", "on"),
+        (2, "dehumidifying", "off", "on", "on"),
+        (3, "heating", "on", "off", "on"),
+        (4, "fan", "off", "off", "on"),
+        (5, "idle", "off", "off", "off"),
+        (0, "unknown", "unknown", "unknown", "unknown"),
+        (6, "unknown", "unknown", "unknown", "unknown"),
+        (99, "unknown", "unknown", "unknown", "unknown"),
+        (None, "unknown", "unknown", "unknown", "unknown"),
+        ("heat", "unknown", "unknown", "unknown", "unknown"),
     ],
 )
-async def test_equipment_status_binary_sensors(
+async def test_equipment_status_sensors(
     hass: HomeAssistant,
     daikin: FakeDaikin,
     entry: MockConfigEntry,
     status: Any,
+    sensor: str,
     heating: str,
     cooling: str,
     fan: str,
 ) -> None:
     await start(hass, daikin, entry, equipmentStatus=status)
+    assert value(hass, "sensor.main_floor_equipment_status") == sensor
     assert value(hass, "binary_sensor.main_floor_heating") == heating
     assert value(hass, "binary_sensor.main_floor_cooling") == cooling
     assert value(hass, "binary_sensor.main_floor_fan") == fan
@@ -170,6 +182,22 @@ async def test_equipment_status_binary_sensors(
     assert value(hass, "binary_sensor.upstairs_heating") == "off"
     assert value(hass, "sensor.main_floor_indoor_temperature") == "70.7"
     assert value(hass, "binary_sensor.main_floor_online") == "on"
+
+
+@pytest.mark.parametrize(("fan", "expected"), [(0, "auto"), (1, "on"), (2, "unknown")])
+async def test_system_fan_sensor(
+    hass: HomeAssistant,
+    daikin: FakeDaikin,
+    entry: MockConfigEntry,
+    entity_registry: er.EntityRegistry,
+    fan: int,
+    expected: str,
+) -> None:
+    await start(hass, daikin, entry, fan=fan)
+    assert value(hass, "sensor.main_floor_system_fan") == expected
+    item = entity_registry.async_get("sensor.main_floor_system_fan")
+    assert item is not None
+    assert item.entity_category == "diagnostic"
 
 
 # Values that are wrong for every field, whatever its documented type.
@@ -184,6 +212,7 @@ BAD: list[Any] = [None, "banana", 9999, -9999, [], {"a": 1}]
         ("humIndoor", "sensor.{}_indoor_humidity"),
         ("tempOutdoor", "sensor.{}_outdoor_temperature"),
         ("humOutdoor", "sensor.{}_outdoor_humidity"),
+        ("fan", "sensor.{}_system_fan"),
         ("geofencingEnabled", "binary_sensor.{}_geofencing"),
         ("fanCirculate", "select.{}_fan_circulation_mode"),
         ("fanCirculateSpeed", "select.{}_fan_circulation_speed"),

@@ -54,6 +54,8 @@ Each thermostat is one device with these entities.
 | Climate | Mode (off, heat, cool, heat/cool), setpoints, indoor temperature and humidity, and current action (heating, cooling, drying, fan, idle, off). |
 | Indoor temperature, Indoor humidity | Readings from the thermostat. |
 | Outdoor temperature, Outdoor humidity | Outdoor readings as the thermostat reports them. |
+| Equipment status | What the equipment is doing: heating, cooling, dehumidifying (overcooling), fan, or idle. |
+| System fan | The fan setting made at the thermostat, auto or on (read-only). |
 | Online | On when the last read succeeded, off when Daikin reports the thermostat offline, unavailable when Daikin itself could not be reached. |
 | Heating, Cooling | On while the equipment is heating, or cooling (including overcooling to dehumidify). |
 | Fan | On while the blower is moving air: during heating, cooling, or fan-only operation. |
@@ -107,8 +109,8 @@ Each thermostat is one device with these entities.
 - **Not available through this API:** equipment telemetry, power usage, air
   quality, schedule editing, humidity targets, away mode (reading or setting),
   and changing geofencing.
-- **The system fan setting (`fan`: auto/on) is read-only** and appears only in
-  the diagnostics download.
+- **The system fan setting (`fan`: auto/on) is read-only.** The System fan
+  sensor shows it; the API cannot change it.
 - **No online flag.** The Online sensor is inferred from read results. If
   Daikin serves cached data for a thermostat that has dropped off Wi-Fi, it
   cannot tell.
